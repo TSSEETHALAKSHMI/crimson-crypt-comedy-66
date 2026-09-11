@@ -284,6 +284,11 @@ function cryptLoop(){
   cx.beginPath();cx.rect(0,0,innerWidth,innerHeight);
   cx.arc(mouse.x,mouse.y,r,0,7);cx.fill('evenodd');
   cx.fillStyle='rgba(255,170,60,.07)';cx.beginPath();cx.arc(mouse.x,mouse.y,r*.7,0,7);cx.fill();
+  // faint golden glint so the chalice is findable
+  const pulse=.05+Math.abs(Math.sin(performance.now()/700))*.06;
+  const gg=cx.createRadialGradient(chalice.x,chalice.y,2,chalice.x,chalice.y,80);
+  gg.addColorStop(0,`rgba(255,214,120,${pulse})`);gg.addColorStop(1,'rgba(255,214,120,0)');
+  cx.fillStyle=gg;cx.beginPath();cx.arc(chalice.x,chalice.y,80,0,7);cx.fill();
   cx.restore();
   requestAnimationFrame(cryptLoop);
 }
