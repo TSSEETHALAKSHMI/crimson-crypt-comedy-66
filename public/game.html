@@ -368,8 +368,8 @@ function chaseLoop(now){
 
   runFrame+=.42;
   const gap=(dist/100);
-  silhouetteBeast(hx, W*0.12 + (1-gap)*W*0.38, H*0.94, 1.6+ (1-gap)*.7, runFrame*.8);
-  silhouetteRunner(hx, W*0.72, H*0.92, 1.5, runFrame);
+  silhouetteBeast(hx, W*0.12 + (1-gap)*W*0.38, H*0.86, 1.5+ (1-gap)*.6, runFrame*.8);
+  silhouetteRunner(hx, W*0.72, H*0.82, 1.35, runFrame);
 
   $('meterFill').style.width=dist+'%';
   dist-=0.34;
