@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Curse of the Crimson Crypt</title>
+<style>
+  :root{
+    --blood:#8e1420;
+    --ink:#0a0708;
+    --bone:#e8dfd0;
+    --day:#eaf4ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--ink);color:var(--bone);
+    font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;cursor:crosshair}
+  #stage{position:fixed;inset:0}
+  .scene{position:absolute;inset:0;display:none}
+  .scene.on{display:block}
+  #cryptC,#chaseC{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+  /* ---------- intro overlay ---------- */
+  #start{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:1.2rem;background:radial-gradient(circle at 50% 40%,#1a0d10,#000 70%);z-index:9}
+  #start h1{font-size:clamp(2rem,6vw,4.4rem);letter-spacing:.12em;text-transform:uppercase;
+    color:var(--blood);text-shadow:0 0 26px #ff2b3d55,0 0 3px #000;animation:flick 4s infinite}
+  @keyframes flick{0%,100%{opacity:1}47%{opacity:.86}48%{opacity:.35}49%{opacity:.95}72%{opacity:.5}}
+  #start p{max-width:34rem;text-align:center;opacity:.72;line-height:1.7}
+  .btn{border:1px solid var(--blood);background:#150a0c;color:var(--bone);padding:.8rem 1.9rem;
+    letter-spacing:.22em;text-transform:uppercase;font-size:.78rem;cursor:pointer;transition:.2s}
+  .btn:hover{background:var(--blood);box-shadow:0 0 28px #8e142099}
+  .hint{position:absolute;bottom:6%;width:100%;text-align:center;font-size:.8rem;letter-spacing:.2em;
+    text-transform:uppercase;opacity:.45;pointer-events:none}
+
+  /* ---------- chase ---------- */
+  #chaseUI{position:absolute;top:6%;left:50%;transform:translateX(-50%);width:min(620px,80vw);z-index:5;text-align:center}
+  #meter{height:16px;border:1px solid #ffffff33;background:#1a0a0c;overflow:hidden}
+  #meterFill{height:100%;width:100%;background:linear-gradient(90deg,#8e1420,#ff5a3c)}
+  #chaseUI .lbl{font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;opacity:.7;margin-bottom:.5rem}
+  #mash{position:absolute;bottom:8%;width:100%;text-align:center;font-size:1.1rem;letter-spacing:.3em;
+    text-transform:uppercase;z-index:5;animation:pulse .55s infinite alternate}
+  @keyframes pulse{from{opacity:.35}to{opacity:1}}
+  .shake{animation:shk .09s infinite}
+  @keyframes shk{0%{transform:translate(0,0)}25%{transform:translate(-9px,5px)}
+    50%{transform:translate(7px,-6px)}75%{transform:translate(-5px,-4px)}100%{transform:translate(6px,4px)}}
+
+  /* ---------- jumpscare ---------- */
+  #scare{background:#000;z-index:20}
+  #scare svg{position:absolute;left:50%;top:50%;width:60vmin;height:60vmin;transform:translate(-50%,-50%) scale(.15);}
+  .strobe{animation:strobe .07s steps(1) infinite}
+  @keyframes strobe{0%{background:#000}50%{background:#f4f4f4}}
+
+  /* ---------- twist ---------- */
+  #day{background:linear-gradient(180deg,#bfe2ff,#eaf4ff 45%,#fff);color:#243b53;z-index:30;cursor:default}
+  #day .wrap{position:absolute;inset:0;display:grid;grid-template-columns:minmax(280px,1fr) minmax(320px,1.15fr);
+    gap:2rem;padding:clamp(1rem,4vw,3.5rem);align-items:center;overflow:auto}
+  #day h2{font-size:clamp(1.4rem,3vw,2.3rem);color:#0f2b47;margin-bottom:.8rem}
+  .speech{background:#fff;border:2px solid #cbdcee;border-radius:18px;padding:1.2rem 1.4rem;
+    box-shadow:0 12px 34px #9db8d233;line-height:1.7;font-size:1rem}
+  .speech b{color:#8e1420}
+  .invoice{background:#fffdf7;border:1px solid #d9cfae;padding:1.4rem 1.6rem;box-shadow:0 18px 40px #0f2b4722;
+    font-family:"Courier New",monospace;color:#33302a}
+  .invoice h3{font-size:.9rem;letter-spacing:.24em;text-transform:uppercase;margin-bottom:1rem;border-bottom:1px dashed #b9ad8a;padding-bottom:.6rem}
+  .row{display:flex;justify-content:space-between;font-size:.85rem;padding:.35rem 0;border-bottom:1px dotted #ddd3b8}
+  .row.total{border:0;margin-top:.7rem;font-weight:700;font-size:1rem}
+  #sigPad{width:100%;height:130px;background:#fff;border:1px dashed #a99988;display:block;
+    cursor:crosshair;touch-action:none;margin-top:.9rem}
+  .sigline{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;opacity:.6;margin-top:.4rem}
+  .dayBtn{margin-top:1rem;background:#0f2b47;color:#fff;border:0;padding:.8rem 1.6rem;letter-spacing:.16em;
+    text-transform:uppercase;font-size:.75rem;cursor:pointer;opacity:.4;pointer-events:none;font-family:inherit}
+  .dayBtn.ready{opacity:1;pointer-events:auto}
+  .demonDay{width:100%;max-width:420px;display:block;margin:0 auto;filter:drop-shadow(0 20px 30px #7a94ad55)}
+
+  /* ---------- finale ---------- */
+  #fin{background:#0f2b47;color:#fff;z-index:40;display:none;place-items:center;text-align:center;padding:2rem}
+  #fin.on{display:grid}
+  #fin h2{font-size:clamp(1.6rem,4vw,3rem);margin-bottom:1rem}
+  #fin p{opacity:.8;max-width:36rem;line-height:1.8}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ===== SCENE 1: CRYPT ===== -->
+  <section id="crypt" class="scene on">
+    <canvas id="cryptC"></canvas>
+    <div class="hint" id="cryptHint">Move the torch. Something gleams in the dark.</div>
+    <div id="start">
+      <h1>Curse of the Crimson Crypt</h1>
+      <p>You woke in a sealed stone chamber beneath the abbey. Your torch is dying.
+         Whatever sleeps here does not like being looked at.</p>
+      <button class="btn" id="startBtn">Enter the crypt</button>
+    </div>
+  </section>
+
+  <!-- ===== SCENE 2: CHASE ===== -->
+  <section id="chase" class="scene">
+    <canvas id="chaseC"></canvas>
+    <div id="chaseUI">
+      <div class="lbl">Distance from the thing</div>
+      <div id="meter"><div id="meterFill"></div></div>
+    </div>
+    <div id="mash">Mash [ SPACEBAR ]</div>
+  </section>
+
+  <!-- ===== SCENE 3: JUMPSCARE ===== -->
+  <section id="scare" class="scene">
+    <svg id="maw" viewBox="0 0 200 200" aria-hidden="true">
+      <defs><radialGradient id="gm" cx="50%" cy="50%"><stop offset="0%" stop-color="#3b0007"/><stop offset="100%" stop-color="#c11026"/></radialGradient></defs>
+      <ellipse cx="100" cy="100" rx="92" ry="78" fill="url(#gm)"/>
+      <ellipse cx="100" cy="104" rx="60" ry="46" fill="#12000a"/>
+      <path d="M45 72 L60 108 L74 72 L88 108 L102 72 L116 108 L130 72 L144 106 L155 74 Z" fill="#f3e6d2"/>
+      <path d="M45 136 L60 100 L74 136 L88 100 L102 136 L116 100 L130 136 L144 102 L155 134 Z" fill="#f3e6d2"/>
+      <circle cx="58" cy="40" r="13" fill="#ffe24a"/><circle cx="58" cy="40" r="5" fill="#000"/>
+      <circle cx="142" cy="40" r="13" fill="#ffe24a"/><circle cx="142" cy="40" r="5" fill="#000"/>
+    </svg>
+  </section>
+
+  <!-- ===== SCENE 4: TWIST ===== -->
+  <section id="day" class="scene">
+    <div class="wrap">
+      <div>
+        <!-- polite demon with reading glasses -->
+        <svg class="demonDay" viewBox="0 0 300 320" aria-label="A demon wearing reading glasses holding a wallet">
+          <ellipse cx="150" cy="306" rx="96" ry="12" fill="#9db8d2" opacity=".5"/>
+          <path d="M150 120 c60 0 78 46 82 108 H68 c4-62 22-108 82-108Z" fill="#b8323f"/>
+          <rect x="96" y="196" width="108" height="60" rx="10" fill="#f2f5f8"/>
+          <path d="M150 196 l-16 34 16 12 16-12Z" fill="#3a5a78"/>
+          <path d="M92 44 c-10-22-6-36 2-40 6-3 16 8 22 26" fill="#7d1f28"/>
+          <path d="M208 44 c10-22 6-36-2-40-6-3-16 8-22 26" fill="#7d1f28"/>
+          <ellipse cx="150" cy="96" rx="72" ry="66" fill="#c9414e"/>
+          <ellipse cx="150" cy="150" rx="34" ry="18" fill="#a92c39"/>
+          <path d="M118 152 q32 16 64 0" stroke="#5d1018" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <circle cx="122" cy="92" r="24" fill="#fffaf0"/><circle cx="122" cy="92" r="9" fill="#20303f"/>
+          <circle cx="178" cy="92" r="24" fill="#fffaf0"/><circle cx="178" cy="92" r="9" fill="#20303f"/>
+          <g stroke="#2b2b2b" stroke-width="5" fill="none">
+            <circle cx="122" cy="92" r="28"/><circle cx="178" cy="92" r="28"/>
+            <path d="M150 92 h-0.5"/><path d="M144 90 q6-6 12 0"/>
+            <path d="M94 86 l-22-8"/><path d="M206 86 l22-8"/>
+          </g>
+          <path d="M108 56 q22-12 40-4" stroke="#5d1018" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M192 56 q-22-12-40-4" stroke="#5d1018" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <g transform="translate(214 214) rotate(-12)">
+            <rect width="66" height="44" rx="6" fill="#5b3a22"/>
+            <rect x="6" y="10" width="54" height="10" rx="2" fill="#d8c48f"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <h2>Barnabus, Junior Crypt Clerk</h2>
+        <div class="speech">
+          "Sir. <b>Sir.</b> I have been shouting for four hallways. You <b>dropped your wallet</b>
+          by the chalice. I do not eat people — I have a spreadsheet and a hip condition.
+          Unfortunately, you sprinted through <b>three ceremonial candles</b> and a load-bearing urn,
+          so I'll need a signature."
+        </div>
+        <div class="invoice" style="margin-top:1.2rem">
+          <h3>Itemized Damage Invoice #7734</h3>
+          <div class="row"><span>Ceremonial candles (3 @ 40)</span><span>120.00</span></div>
+          <div class="row"><span>Load-bearing funerary urn</span><span>480.00</span></div>
+          <div class="row"><span>Emotional labour, clerical</span><span>95.00</span></div>
+          <div class="row"><span>Screaming permit (unregistered)</span><span>60.00</span></div>
+          <div class="row"><span>Chalice fingerprint polishing</span><span>25.00</span></div>
+          <div class="row total"><span>Total due</span><span>780.00 souls</span></div>
+          <canvas id="sigPad"></canvas>
+          <div class="sigline">Sign above with your mouse to be released</div>
+          <button class="dayBtn" id="signBtn">Submit &amp; exit crypt</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SCENE 5: FINALE ===== -->
+  <section id="fin">
+    <div>
+      <h2>Filed successfully.</h2>
+      <p>Barnabus stamps the form, returns your wallet, and reminds you that the crypt
+         closes at five. You are free. You are also 780 souls poorer.</p>
+      <button class="btn" style="margin-top:1.6rem;border-color:#fff" onclick="location.reload()">Play again</button>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ============ AUDIO (all synthesized) ============ */
+let AC=null;
+const ac=()=> (AC ||= new (window.AudioContext||window.webkitAudioContext)());
+function tone(f,dur,type='sine',gain=.15,when=0,slideTo){
+  const c=ac(),t=c.currentTime+when,o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.setValueAtTime(f,t);
+  if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(c.destination);o.start(t);o.stop(t+dur+.05);
+}
+function noise(dur,gain=.3,filter=1200,when=0){
+  const c=ac(),t=c.currentTime+when,len=Math.max(1,Math.floor(c.sampleRate*dur));
+  const buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
+  const s=c.createBufferSource();s.buffer=buf;
+  const bp=c.createBiquadFilter();bp.type='lowpass';bp.frequency.value=filter;
+  const g=c.createGain();g.gain.value=gain;
+  s.connect(bp).connect(g).connect(c.destination);s.start(t);
+}
+let droneNodes=[];
+function startDrone(){
+  const c=ac();
+  [55,58.2,82.4].forEach(f=>{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type='sawtooth';o.frequency.value=f;g.gain.value=.05;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=220;
+    o.connect(lp).connect(g).connect(c.destination);o.start();droneNodes.push(o,g);
+  });
+}
+function stopDrone(){droneNodes.forEach(n=>{try{n.stop&&n.stop()}catch(e){}});droneNodes=[];}
+function screech(){
+  const c=ac();
+  for(let i=0;i<4;i++)tone(1400+i*260,1.0,'sawtooth',.22,0,120);
+  noise(1.0,.55,4000);
+  tone(60,1.2,'square',.25,0,30);
+}
+let musicTimer=null;
+function elevatorMusic(){
+  const c=ac(),root=[523.25,659.25,783.99,880,783.99,659.25,587.33,659.25];
+  let i=0;
+  const step=()=>{
+    tone(root[i%root.length],.42,'triangle',.09);
+    tone(root[i%root.length]/2,.5,'sine',.06);
+    if(i%4===0)tone(261.63,.6,'sine',.05);
+    i++;
+  };
+  step();musicTimer=setInterval(step,340);
+}
+
+/* ============ SCENE SWITCHING ============ */
+const $=id=>document.getElementById(id);
+const scenes={crypt:$('crypt'),chase:$('chase'),scare:$('scare'),day:$('day')};
+function show(name){Object.entries(scenes).forEach(([k,el])=>el.classList.toggle('on',k===name));}
+
+/* ============ SCENE 1: FLASHLIGHT CRYPT ============ */
+const cc=$('cryptC'),cx=cc.getContext('2d');
+let mouse={x:innerWidth/2,y:innerHeight/2},cryptOn=false,chaliceHit=false;
+let chalice={x:0,y:0,r:46};
+function sizeCanvas(cv){const d=devicePixelRatio||1;cv.width=innerWidth*d;cv.height=innerHeight*d;
+  cv.getContext('2d').setTransform(d,0,0,d,0,0);}
+function placeChalice(){chalice.x=innerWidth*(.22+Math.random()*.56);chalice.y=innerHeight*(.35+Math.random()*.4);}
+function drawWall(g){
+  g.fillStyle='#3a3430';g.fillRect(0,0,innerWidth,innerHeight);
+  const bw=118,bh=62;
+  for(let y=0;y<innerHeight+bh;y+=bh){
+    const off=(y/bh)%2?bw/2:0;
+    for(let x=-bw;x<innerWidth+bw;x+=bw){
+      const v=((x*13+y*7)%23)/23;
+      g.fillStyle=`rgb(${58+v*22},${52+v*18},${47+v*16})`;
+      g.fillRect(x+off+2,y+2,bw-4,bh-4);
+      g.strokeStyle='rgba(0,0,0,.45)';g.strokeRect(x+off+2,y+2,bw-4,bh-4);
+    }
+  }
+  // ominous scrawls
+  g.save();g.globalAlpha=.35;g.fillStyle='#7a1420';g.font='italic 30px Georgia';
+  g.fillText('DO NOT TOUCH THE CHALICE',innerWidth*.12,innerHeight*.24);
+  g.fillText('HE IS ON HIS BREAK',innerWidth*.5,innerHeight*.78);
+  g.restore();
+  // chalice
+  g.save();g.translate(chalice.x,chalice.y);
+  const grd=g.createLinearGradient(-24,-30,24,34);
+  grd.addColorStop(0,'#ffe9a3');grd.addColorStop(.5,'#d4a11e');grd.addColorStop(1,'#8c650b');
+  g.fillStyle=grd;
+  g.beginPath();g.moveTo(-24,-28);g.quadraticCurveTo(0,26,24,-28);g.closePath();g.fill();
+  g.fillRect(-4,-2,8,30);g.beginPath();g.ellipse(0,32,20,7,0,0,7);g.fill();
+  g.restore();
+}
+function cryptLoop(){
+  if(!cryptOn)return;
+  cx.save();
+  drawWall(cx);
+  // darkness with torch hole
+  const flicker=Math.random()*26;
+  const r=170+flicker;
+  const grd=cx.createRadialGradient(mouse.x,mouse.y,10,mouse.x,mouse.y,r);
+  grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(.55,'rgba(0,0,0,.55)');grd.addColorStop(1,'rgba(0,0,0,.985)');
+  cx.fillStyle=grd;cx.fillRect(0,0,innerWidth,innerHeight);
+  cx.fillStyle='rgba(0,0,0,.92)';
+  cx.beginPath();cx.rect(0,0,innerWidth,innerHeight);
+  cx.arc(mouse.x,mouse.y,r,0,7);cx.fill('evenodd');
+  cx.fillStyle='rgba(255,170,60,.07)';cx.beginPath();cx.arc(mouse.x,mouse.y,r*.7,0,7);cx.fill();
+  // faint golden glint so the chalice is findable
+  const pulse=.05+Math.abs(Math.sin(performance.now()/700))*.06;
+  const gg=cx.createRadialGradient(chalice.x,chalice.y,2,chalice.x,chalice.y,80);
+  gg.addColorStop(0,`rgba(255,214,120,${pulse})`);gg.addColorStop(1,'rgba(255,214,120,0)');
+  cx.fillStyle=gg;cx.beginPath();cx.arc(chalice.x,chalice.y,80,0,7);cx.fill();
+  cx.restore();
+  requestAnimationFrame(cryptLoop);
+}
+addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+addEventListener('resize',()=>{sizeCanvas(cc);sizeCanvas($('chaseC'));});
+$('startBtn').addEventListener('click',()=>{
+  ac().resume();startDrone();
+  $('start').style.display='none';
+  cryptOn=true;sizeCanvas(cc);placeChalice();cryptLoop();
+  noise(1.4,.2,500);
+});
+cc.addEventListener('click',e=>{
+  if(!cryptOn||chaliceHit)return;
+  const d=Math.hypot(e.clientX-chalice.x,e.clientY-chalice.y);
+  const lit=Math.hypot(e.clientX-mouse.x,e.clientY-mouse.y)<190;
+  if(d<chalice.r&&lit){chaliceHit=true;cryptOn=false;tone(880,.5,'triangle',.2);
+    setTimeout(startChase,420);}
+  else{$('cryptHint').textContent='Only stone. Keep searching.';}
+});
+
+/* ============ SCENE 2: CORRIDOR CHASE ============ */
+const hc=$('chaseC'),hx=hc.getContext('2d');
+let chaseOn=false,dist=100,t0=0,runFrame=0,heartT=0;
+function startChase(){
+  stopDrone();show('chase');sizeCanvas(hc);chaseOn=true;dist=100;t0=performance.now();
+  document.body.classList.add('shake');
+  noise(.8,.5,300);tone(80,1.2,'sawtooth',.2,0,40);
+  chaseLoop();
+}
+function silhouetteRunner(g,x,y,s,phase){
+  g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#050505';
+  const sw=Math.sin(phase)*22,sw2=Math.sin(phase+Math.PI)*22;
+  g.beginPath();g.ellipse(0,-96,15,17,0,0,7);g.fill();          // head
+  g.beginPath();g.moveTo(-14,-80);g.lineTo(14,-80);g.lineTo(10,-14);g.lineTo(-10,-14);g.closePath();g.fill(); // torso
+  g.lineWidth=11;g.strokeStyle='#050505';g.lineCap='round';
+  g.beginPath();g.moveTo(-8,-14);g.lineTo(-8+sw,26);g.lineTo(-14+sw,60);g.stroke();  // legs
+  g.beginPath();g.moveTo(8,-14);g.lineTo(8+sw2,26);g.lineTo(2+sw2,60);g.stroke();
+  g.lineWidth=9;
+  g.beginPath();g.moveTo(-12,-70);g.lineTo(-26-sw2,-40);g.stroke();                  // arms
+  g.beginPath();g.moveTo(12,-70);g.lineTo(26-sw,-40);g.stroke();
+  g.restore();
+}
+function silhouetteBeast(g,x,y,s,phase){
+  g.save();g.translate(x,y);g.scale(s,s);g.fillStyle='#0a0002';
+  g.beginPath();g.ellipse(0,-70,54,38,0,0,7);g.fill();                               // body
+  g.beginPath();g.ellipse(-52,-104,24,20,-.3,0,7);g.fill();                          // head
+  g.beginPath();g.moveTo(-58,-124);g.quadraticCurveTo(-88,-160,-58,-166);
+  g.quadraticCurveTo(-62,-142,-48,-126);g.closePath();g.fill();                      // horn L
+  g.beginPath();g.moveTo(-36,-124);g.quadraticCurveTo(-12,-162,-18,-170);
+  g.quadraticCurveTo(-30,-146,-28,-124);g.closePath();g.fill();                      // horn R
+  g.fillStyle='#ff2e2e';
+  g.beginPath();g.ellipse(-62,-106,5,4,0,0,7);g.fill();
+  g.beginPath();g.ellipse(-46,-108,5,4,0,0,7);g.fill();
+  g.fillStyle='#0a0002';g.lineWidth=14;g.strokeStyle='#0a0002';g.lineCap='round';
+  const sw=Math.sin(phase)*26,sw2=Math.sin(phase+2)*26;
+  g.beginPath();g.moveTo(-28,-40);g.lineTo(-28+sw,10);g.stroke();
+  g.beginPath();g.moveTo(24,-40);g.lineTo(24+sw2,10);g.stroke();
+  g.beginPath();g.moveTo(50,-84);g.quadraticCurveTo(96,-96,86,-40);g.lineWidth=9;g.stroke(); // tail
+  g.restore();
+}
+function chaseLoop(now){
+  if(!chaseOn)return;
+  const W=innerWidth,H=innerHeight,t=(now||0)/1000;
+  hx.fillStyle='#2a1a18';hx.fillRect(0,0,W,H);
+  // corridor perspective
+  const cxp=W/2,cyp=H*.45;
+  for(let i=0;i<16;i++){
+    const z=((t*1.9+i/16)%1),k=Math.pow(z,2.2);
+    hx.strokeStyle=`rgba(150,110,90,${.06+k*.28})`;hx.lineWidth=1+k*4;
+    const w=W*k*1.5,h=H*k*1.5;
+    hx.strokeRect(cxp-w/2,cyp-h/2,w,h);
+  }
+  hx.strokeStyle='rgba(255,120,60,.14)';
+  [[0,0],[W,0],[0,H],[W,H]].forEach(p=>{hx.beginPath();hx.moveTo(p[0],p[1]);hx.lineTo(cxp,cyp);hx.stroke();});
+  const fog=hx.createRadialGradient(cxp,cyp,20,cxp,cyp,Math.max(W,H)*.75);
+  fog.addColorStop(0,'rgba(255,150,80,.20)');fog.addColorStop(1,'rgba(0,0,0,.72)');
+  hx.fillStyle=fog;hx.fillRect(0,0,W,H);
+  // torchlight pool on the floor
+  const pool=hx.createRadialGradient(W*.7,H*.9,10,W*.7,H*.9,W*.34);
+  pool.addColorStop(0,'rgba(255,175,90,.30)');pool.addColorStop(1,'rgba(255,140,60,0)');
+  hx.fillStyle=pool;hx.fillRect(0,0,W,H);
+
+  runFrame+=.42;
+  const gap=(dist/100);
+  silhouetteBeast(hx, W*0.12 + (1-gap)*W*0.38, H*0.86, 1.5+ (1-gap)*.6, runFrame*.8);
+  silhouetteRunner(hx, W*0.72, H*0.82, 1.35, runFrame);
+
+  $('meterFill').style.width=dist+'%';
+  dist-=0.34;
+  if(now-heartT>Math.max(210,420*gap)){heartT=now;tone(52,.16,'sine',.28);noise(.06,.12,200);}
+  if(dist<=0){chaseOn=false;jumpscare();return;}
+  if(now-t0>16000){chaseOn=false;jumpscare();return;} // survived to the end
+  requestAnimationFrame(chaseLoop);
+}
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();
+    if(chaseOn){dist=Math.min(100,dist+1.55);tone(300+Math.random()*120,.05,'square',.06);}}
+});
+
+/* ============ SCENE 3: JUMPSCARE ============ */
+function jumpscare(){
+  document.body.classList.remove('shake');
+  show('scare');$('scare').classList.add('strobe');
+  screech();
+  const maw=$('maw');let s=.15,st=performance.now();
+  (function grow(now){
+    const p=Math.min(1,(now-st)/900);
+    maw.style.transform=`translate(-50%,-50%) scale(${.15+p*3.4}) rotate(${Math.sin(p*40)*3}deg)`;
+    if(p<1)requestAnimationFrame(grow);
+  })(performance.now());
+  setTimeout(twist,1000);
+}
+
+/* ============ SCENE 4: TWIST ============ */
+function twist(){
+  $('scare').classList.remove('strobe');
+  show('day');document.body.style.cursor='default';
+  stopDrone();elevatorMusic();
+  initSig();
+}
+
+/* ============ SIGNATURE PAD ============ */
+function initSig(){
+  const p=$('sigPad'),g=p.getContext('2d'),d=devicePixelRatio||1;
+  const rect=p.getBoundingClientRect();
+  p.width=rect.width*d;p.height=rect.height*d;g.setTransform(d,0,0,d,0,0);
+  g.strokeStyle='#1b3a5c';g.lineWidth=2.4;g.lineCap='round';g.lineJoin='round';
+  let drawing=false,ink=0,last=null;
+  const pos=e=>{const r=p.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+  const down=e=>{drawing=true;last=pos(e);};
+  const move=e=>{
+    if(!drawing)return;const q=pos(e);
+    g.beginPath();g.moveTo(last.x,last.y);g.lineTo(q.x,q.y);g.stroke();
+    ink+=Math.hypot(q.x-last.x,q.y-last.y);last=q;
+    if(ink>260)$('signBtn').classList.add('ready');
+  };
+  const up=()=>{drawing=false;};
+  p.addEventListener('mousedown',down);addEventListener('mousemove',move);addEventListener('mouseup',up);
+  p.addEventListener('touchstart',e=>{e.preventDefault();down(e.touches[0]);});
+  p.addEventListener('touchmove',e=>{e.preventDefault();move(e.touches[0]);});
+  p.addEventListener('touchend',up);
+  $('signBtn').addEventListener('click',()=>{
+    clearInterval(musicTimer);
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,.5,'triangle',.12,i*.09));
+    $('day').classList.remove('on');$('fin').classList.add('on');
+  });
+}
+sizeCanvas(cc);
+</script>
+</body>
+</html>

@@ -1,24 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Curse of the Crimson Crypt — Horror Game with a Twist" },
+      {
+        name: "description",
+        content:
+          "Explore a pitch-black crypt by torchlight, survive the chase, and face a jumpscare that turns into paperwork. Playable in your browser.",
+      },
+      { property: "og:title", content: "Curse of the Crimson Crypt" },
+      {
+        property: "og:description",
+        content:
+          "A short browser horror game that ends in the most bureaucratic twist imaginable.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
+    <main className="h-screen w-screen overflow-hidden bg-black">
+      <h1 className="sr-only">Curse of the Crimson Crypt</h1>
+      <iframe
+        src="/game.html"
+        title="Curse of the Crimson Crypt game"
+        className="h-full w-full border-0"
       />
-    </div>
+    </main>
   );
 }
