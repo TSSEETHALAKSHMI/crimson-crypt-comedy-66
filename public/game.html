@@ -358,12 +358,18 @@ function chaseLoop(now){
   }
   hx.strokeStyle='rgba(255,120,60,.14)';
   [[0,0],[W,0],[0,H],[W,H]].forEach(p=>{hx.beginPath();hx.moveTo(p[0],p[1]);hx.lineTo(cxp,cyp);hx.stroke();});
-  hx.fillStyle='rgba(0,0,0,.35)';hx.fillRect(0,0,W,H);
+  const fog=hx.createRadialGradient(cxp,cyp,20,cxp,cyp,Math.max(W,H)*.75);
+  fog.addColorStop(0,'rgba(255,150,80,.20)');fog.addColorStop(1,'rgba(0,0,0,.72)');
+  hx.fillStyle=fog;hx.fillRect(0,0,W,H);
+  // torchlight pool on the floor
+  const pool=hx.createRadialGradient(W*.7,H*.9,10,W*.7,H*.9,W*.34);
+  pool.addColorStop(0,'rgba(255,175,90,.30)');pool.addColorStop(1,'rgba(255,140,60,0)');
+  hx.fillStyle=pool;hx.fillRect(0,0,W,H);
 
   runFrame+=.42;
   const gap=(dist/100);
-  silhouetteBeast(hx, W*0.14 + (1-gap)*W*0.34, H*0.86, 1.05+ (1-gap)*.5, runFrame*.8);
-  silhouetteRunner(hx, W*0.72, H*0.88, 1.0, runFrame);
+  silhouetteBeast(hx, W*0.12 + (1-gap)*W*0.38, H*0.94, 1.6+ (1-gap)*.7, runFrame*.8);
+  silhouetteRunner(hx, W*0.72, H*0.92, 1.5, runFrame);
 
   $('meterFill').style.width=dist+'%';
   dist-=0.34;
